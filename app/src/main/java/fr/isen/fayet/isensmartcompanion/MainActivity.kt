@@ -21,7 +21,7 @@ class MainActivity : ComponentActivity() {
             ISENSmartCompanionTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Greeting(
-                        name = "Android2",
+                        name = "Android",
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
@@ -42,6 +42,6 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
 @Composable
 fun GreetingPreview() {
     ISENSmartCompanionTheme {
-        Greeting("Android2")
+        Greeting("Android")
     }
 }
