@@ -1,30 +1,29 @@
 package fr.isen.fayet.isensmartcompanion
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Notifications
-import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import fr.isen.fayet.isensmartcompanion.models.EventModel
+import fr.isen.fayet.isensmartcompanion.screen.EventsScreen
+import fr.isen.fayet.isensmartcompanion.screen.HistoryScreen
 import fr.isen.fayet.isensmartcompanion.screen.MainScreen
 import fr.isen.fayet.isensmartcompanion.screen.TabView
 import fr.isen.fayet.isensmartcompanion.ui.theme.ISENSmartCompanionTheme
@@ -43,11 +42,11 @@ class MainActivity : ComponentActivity() {
         setContent {
             // setting up the individual tabs
             val homeTab = TabBarItem(title = "Home", selectedIcon = Icons.Filled.Home, unselectedIcon = Icons.Outlined.Home)
-            val alertsTab = TabBarItem(title = "Alerts", selectedIcon = Icons.Filled.Notifications, unselectedIcon = Icons.Outlined.Notifications, badgeAmount = 7)
-            val settingsTab = TabBarItem(title = "Settings", selectedIcon = Icons.Filled.Settings, unselectedIcon = Icons.Outlined.Settings)
+            val eventsTab = TabBarItem(title = "Events", selectedIcon = Icons.Filled.Info, unselectedIcon = Icons.Outlined.Info)//jai enlevé badgeAmount
+            val historyTab = TabBarItem(title = "History", selectedIcon = Icons.Filled.Menu, unselectedIcon = Icons.Outlined.Menu)
 
             // creating a list of all the tabs
-            val tabBarItems = listOf(homeTab, alertsTab, settingsTab)
+            val tabBarItems = listOf(homeTab, eventsTab, historyTab)
 
             // creating our navController
             val navController = rememberNavController()
@@ -60,26 +59,29 @@ class MainActivity : ComponentActivity() {
                             composable(homeTab.title) {
                                 MainScreen(innerPadding)
                             }
-                            composable(alertsTab.title) {
-                                Text(alertsTab.title)
+                            composable(eventsTab.title) {
+                                EventsScreen(
+                                    innerPadding = innerPadding,
+                                    eventHandler = { startEventDetailActivity(it) }
+                                )
                             }
-                            composable(settingsTab.title) {
-                                Text(settingsTab.title)
+                            composable(historyTab.title) {
+                                HistoryScreen(innerPadding)
                             }
                         }
                     }
                     }
             }
         }
+
+
+    }
+    fun startEventDetailActivity(event: EventModel) {
+        val intent = Intent( this, EventDetailActivity::class.java).apply {
+            putExtra(EventDetailActivity.eventExtraKey, event)
+        }
+        startActivity(intent)
     }
 }
 
 
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    ISENSmartCompanionTheme {
-        MainScreen(PaddingValues(9.dp))
-    }
-}
