@@ -80,6 +80,6 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun GreetingPreview() {
     ISENSmartCompanionTheme {
-        MainScreen(PaddingValues(8.dp))
+        MainScreen(PaddingValues(9.dp))
     }
 }
