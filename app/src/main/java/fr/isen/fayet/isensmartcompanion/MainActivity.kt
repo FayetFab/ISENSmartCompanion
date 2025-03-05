@@ -3,6 +3,7 @@ package fr.isen.fayet.isensmartcompanion
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -24,9 +25,11 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.google.firebase.Firebase
-import com.google.firebase.FirebaseApp
-import com.google.firebase.vertexai.vertexAI
+import com.google.ai.client.generativeai.GenerativeModel
+import com.google.ai.client.generativeai.type.Content
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import fr.isen.fayet.isensmartcompanion.models.EventModel
 import fr.isen.fayet.isensmartcompanion.screen.EventsScreen
 import fr.isen.fayet.isensmartcompanion.screen.HistoryScreen
@@ -37,6 +40,9 @@ import fr.isen.fayet.isensmartcompanion.ui.theme.ISENSmartCompanionTheme
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+//import com.google.firebase.BuildConfig
+import fr.isen.fayet.isensmartcompanion.BuildConfig
+
 
 data class TabBarItem(
     val title: String,
@@ -46,11 +52,20 @@ data class TabBarItem(
 )
 
 class MainActivity : ComponentActivity() {
+    private val apiKey = BuildConfig.GOOGLE_API_KEY
+    private val generativeModel = GenerativeModel(modelName = "gemini-1.5-flash", apiKey = apiKey)
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        Log.d("API_KEY", "Clé API utilisée : $apiKey")
+
         super.onCreate(savedInstanceState)
-        if (FirebaseApp.getApps(this).isEmpty()) {
-            FirebaseApp.initializeApp(this)
-        }
+//        if (FirebaseApp.getApps(this).isEmpty()) {
+//            FirebaseApp.initializeApp(this)
+//            Log.d("Firebase", "Firebase initialized")
+//        } else {
+//            Log.d("Firebase", "Firebase already initialized")
+//        }
+
         fetchEvents()
         enableEdgeToEdge()
         setContent {
@@ -71,7 +86,7 @@ class MainActivity : ComponentActivity() {
                     Box(Modifier.padding(innerPadding)) {
                         NavHost(navController = navController, startDestination = homeTab.title) {
                             composable(homeTab.title) {
-                                MainScreen(innerPadding)
+                                MainScreen(innerPadding, generativeModel)
                             }
                             composable(eventsTab.title) {
                                 EventsScreen(
@@ -80,7 +95,7 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
                             composable(historyTab.title) {
-                                HistoryScreen(innerPadding)
+                                //HistoryScreen(innerPadding)
                             }
                         }
                     }
@@ -101,6 +116,9 @@ class MainActivity : ComponentActivity() {
 
             override fun onFailure(p0: Call<List<EventModel>>, p1: Throwable) {
                 Log.e("request", p1.message ?: "request failed")
+                runOnUiThread {
+                    Toast.makeText(this@MainActivity, "Failed to fetch events", Toast.LENGTH_SHORT).show()
+                }
             }
 
         })
@@ -110,6 +128,31 @@ class MainActivity : ComponentActivity() {
             putExtra(EventDetailActivity.eventExtraKey, event)
         }
         startActivity(intent)
+    }
+
+    override fun onRestart() {
+        super.onRestart()
+        Log.d("lifecycle", "MainActivity onRestart")
+    }
+
+    override fun onResume() {
+        super.onResume()
+        Log.d("lifecycle", "MainActivity onResume")
+    }
+
+    override fun onStop() {
+        Log.d("lifecycle", "MainActivity onStop")
+        super.onStop()
+    }
+
+    override fun onPause() {
+        Log.d("lifecycle", "MainActivity onPause")
+        super.onPause()
+    }
+
+    override fun onDestroy() {
+        Log.d("lifecycle", "MainActivity onDestroy")
+        super.onDestroy()
     }
 }
 
