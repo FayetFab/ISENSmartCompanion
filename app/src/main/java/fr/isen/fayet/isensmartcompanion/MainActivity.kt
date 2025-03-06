@@ -18,21 +18,14 @@ import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.google.ai.client.generativeai.GenerativeModel
-import com.google.ai.client.generativeai.type.Content
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import fr.isen.fayet.isensmartcompanion.models.EventModel
 import fr.isen.fayet.isensmartcompanion.screen.EventsScreen
-import fr.isen.fayet.isensmartcompanion.screen.HistoryScreen
 import fr.isen.fayet.isensmartcompanion.screen.MainScreen
 import fr.isen.fayet.isensmartcompanion.screen.TabView
 import fr.isen.fayet.isensmartcompanion.service.RetrofitInstance
@@ -40,8 +33,6 @@ import fr.isen.fayet.isensmartcompanion.ui.theme.ISENSmartCompanionTheme
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-//import com.google.firebase.BuildConfig
-import fr.isen.fayet.isensmartcompanion.BuildConfig
 
 
 data class TabBarItem(
@@ -56,16 +47,8 @@ class MainActivity : ComponentActivity() {
     private val generativeModel = GenerativeModel(modelName = "gemini-1.5-flash", apiKey = apiKey)
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        Log.d("API_KEY", "Clé API utilisée : $apiKey")
 
         super.onCreate(savedInstanceState)
-//        if (FirebaseApp.getApps(this).isEmpty()) {
-//            FirebaseApp.initializeApp(this)
-//            Log.d("Firebase", "Firebase initialized")
-//        } else {
-//            Log.d("Firebase", "Firebase already initialized")
-//        }
-
         fetchEvents()
         enableEdgeToEdge()
         setContent {

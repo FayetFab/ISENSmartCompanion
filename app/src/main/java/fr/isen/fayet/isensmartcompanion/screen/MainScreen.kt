@@ -3,6 +3,7 @@ package fr.isen.fayet.isensmartcompanion.screen
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -11,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -35,8 +35,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.LaunchedEffect
 import com.google.ai.client.generativeai.type.Content
 import com.google.ai.client.generativeai.type.TextPart
+import fr.isen.fayet.isensmartcompanion.models.Message
 import kotlinx.coroutines.withContext
 
 
@@ -46,6 +49,8 @@ fun MainScreen(innerPadding: PaddingValues, generativeModel: GenerativeModel) {
     var userInput = remember { mutableStateOf("") }
     var responses = remember { mutableStateListOf<String>() }
     val scope = rememberCoroutineScope()
+    val messages = remember { mutableStateListOf<Message>() }
+
     Column(
         modifier = Modifier.fillMaxWidth().fillMaxSize().padding((innerPadding)),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -59,23 +64,37 @@ fun MainScreen(innerPadding: PaddingValues, generativeModel: GenerativeModel) {
         Text(
             context.getString(R.string.app_name)
         )
-        Text(
-            "", modifier = Modifier
-                .fillMaxSize()
-                .weight(0.5F)
-        )
+
+        val lazyColumnState = rememberLazyListState()
+        LaunchedEffect(messages.size) {
+            lazyColumnState.scrollToItem(messages.size)
+        }
+
+        LazyColumn(
+            state = lazyColumnState,
+            modifier = Modifier.weight(1F)
+        ) {
+            items(messages) { message ->
+                MessageBubble(message = message)
+                //Text(response, modifier = Modifier.padding(8.dp))
+            }
+        }
+
         Row(modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .background(Color.LightGray)
-            .padding(8.dp)) {
+            .padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+
             TextField(value = userInput.value, onValueChange = { userInput.value = it}, colors = TextFieldDefaults.colors(
                 focusedContainerColor = Color.Transparent,
                 unfocusedContainerColor = Color.Transparent,
                 disabledContainerColor = Color.Transparent,
                 errorContainerColor = Color.Transparent),
                 label = { Text("Pose une question") },
-                modifier = Modifier.weight(1F)
+                modifier = Modifier.weight(1F).padding(end = 8.dp)
             )
             OutlinedButton( onClick = {
                 scope.launch(Dispatchers.IO) { // Utilisation de IO pour éviter le blocage UI
@@ -83,17 +102,23 @@ fun MainScreen(innerPadding: PaddingValues, generativeModel: GenerativeModel) {
                         val response = generativeModel.generateContent(Content(parts = listOf(TextPart(userInput.value))))
 
                         withContext(Dispatchers.Main) {
-                            Toast.makeText(context, "user input : ${userInput.value}", Toast.LENGTH_LONG).show()
+                            //Toast.makeText(context, "user input : ${userInput.value}", Toast.LENGTH_LONG).show()
                         }
 
                         response.text?.let {
-                            responses.add(it)
-                        } ?: responses.add("Erreur : Réponse vide")
+                            // Ajouter le message de l'utilisateur
+                            messages.add(Message(text = userInput.value, isUser = true))
+                            // Ajouter la réponse de l'IA
+                            messages.add(Message(text = it, isUser = false))
+                        } ?: messages.add(Message(text = "Erreur : Réponse vide", isUser = false))
                     } catch (e: Exception) {
                         withContext(Dispatchers.Main) {
                             Toast.makeText(context, "Erreur : ${e.localizedMessage}", Toast.LENGTH_LONG).show()
                         }
-                        responses.add("Erreur : ${e.localizedMessage}")
+                        messages.add(Message(text = "Erreur : ${e.localizedMessage}", isUser = false))
+                    } finally {
+                        // Réinitialiser la TextField après l'envoi
+                        userInput.value = ""
                     }
                 }
 
@@ -106,11 +131,28 @@ fun MainScreen(innerPadding: PaddingValues, generativeModel: GenerativeModel) {
                 })
         }
 
-        LazyColumn {
-            items(responses, key = { it }) { response ->
-                Text(response, modifier = Modifier.padding(8.dp))
-            }
-        }
+
     }
 
+}
+
+@Composable
+fun MessageBubble(message: Message) {
+    val bubbleColor = if (message.isUser) Color.Red else Color.Blue
+    val alignment = if (message.isUser) Alignment.CenterEnd else Alignment.CenterStart
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        contentAlignment = alignment
+    ) {
+        Text(
+            text = message.text,
+            modifier = Modifier
+                .background(bubbleColor, RoundedCornerShape(8.dp))
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            color = Color.White
+        )
+    }
 }
