@@ -1,5 +1,6 @@
 package fr.isen.fayet.isensmartcompanion.screen
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -52,7 +53,10 @@ fun MainScreen(innerPadding: PaddingValues, generativeModel: GenerativeModel) {
     val messages = remember { mutableStateListOf<Message>() }
 
     Column(
-        modifier = Modifier.fillMaxWidth().fillMaxSize().padding((innerPadding)),
+        modifier = Modifier
+            .fillMaxWidth()
+            .fillMaxSize()
+            .padding((innerPadding)),
         horizontalAlignment = Alignment.CenterHorizontally
     ){
 
@@ -94,7 +98,9 @@ fun MainScreen(innerPadding: PaddingValues, generativeModel: GenerativeModel) {
                 disabledContainerColor = Color.Transparent,
                 errorContainerColor = Color.Transparent),
                 label = { Text("Pose une question") },
-                modifier = Modifier.weight(1F).padding(end = 8.dp)
+                modifier = Modifier
+                    .weight(1F)
+                    .padding(end = 8.dp)
             )
             OutlinedButton( onClick = {
                 scope.launch(Dispatchers.IO) { // Utilisation de IO pour éviter le blocage UI
@@ -114,6 +120,7 @@ fun MainScreen(innerPadding: PaddingValues, generativeModel: GenerativeModel) {
                     } catch (e: Exception) {
                         withContext(Dispatchers.Main) {
                             Toast.makeText(context, "Erreur : ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+                            Log.i("IAID", "Erreur : ${e.localizedMessage}")
                         }
                         messages.add(Message(text = "Erreur : ${e.localizedMessage}", isUser = false))
                     } finally {

@@ -1,6 +1,10 @@
 package fr.isen.fayet.isensmartcompanion
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -49,6 +53,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
 
         super.onCreate(savedInstanceState)
+        createNotificationChannel()
         fetchEvents()
         enableEdgeToEdge()
         setContent {
@@ -92,13 +97,13 @@ class MainActivity : ComponentActivity() {
         call.enqueue(object : Callback<List<EventModel>> {
             override fun onResponse(p0: Call<List<EventModel>>, p1: Response<List<EventModel>>) {
                 p1.body()?.forEach {
-                    Log.d("request", "event")
+                    Log.d("request1", "event")
 
                 }
             }
 
             override fun onFailure(p0: Call<List<EventModel>>, p1: Throwable) {
-                Log.e("request", p1.message ?: "request failed")
+                Log.e("request2", p1.message ?: "request failed")
                 runOnUiThread {
                     Toast.makeText(this@MainActivity, "Failed to fetch events", Toast.LENGTH_SHORT).show()
                 }
@@ -112,6 +117,24 @@ class MainActivity : ComponentActivity() {
         }
         startActivity(intent)
     }
+
+    private fun createNotificationChannel() {
+        // Create the NotificationChannel, but only on API 26+ because
+        // the NotificationChannel class is not in the Support Library.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val name = "EventNotif"
+            val descriptionText = "DescNotif"
+            val importance = NotificationManager.IMPORTANCE_DEFAULT
+            val channel = NotificationChannel("CHANNEL_ID", name, importance).apply {
+                description = descriptionText
+            }
+            // Register the channel with the system.
+            val notificationManager: NotificationManager =
+                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
+    }
+
 
     override fun onRestart() {
         super.onRestart()

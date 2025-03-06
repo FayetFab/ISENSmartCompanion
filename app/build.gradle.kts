@@ -4,7 +4,6 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    //id("com.google.devtools.ksp")
 }
 android {
     namespace = "fr.isen.fayet.isensmartcompanion"
@@ -92,6 +91,6 @@ dependencies {
     // WorkManager
     implementation ("androidx.work:work-runtime-ktx:2.8.1")
     // Notifications
-    implementation ("androidx.core:core-ktx:1.12.0")
+    implementation ("androidx.core:core-ktx:1.15.0")
     implementation ("androidx.compose.material:material-icons-extended:1.6.0")
 }
