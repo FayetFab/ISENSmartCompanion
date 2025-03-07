@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -38,19 +37,22 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import com.google.ai.client.generativeai.type.Content
 import com.google.ai.client.generativeai.type.TextPart
-import fr.isen.fayet.isensmartcompanion.models.Message
+import fr.isen.fayet.isensmartcompanion.models.AppDatabase
+import fr.isen.fayet.isensmartcompanion.models.ChatMessage
 import kotlinx.coroutines.withContext
 
 
 @Composable
-fun MainScreen(innerPadding: PaddingValues, generativeModel: GenerativeModel) {
+fun MainScreen(innerPadding: PaddingValues, generativeModel: GenerativeModel, db: AppDatabase) {
     val context = LocalContext.current
-    var userInput = remember { mutableStateOf("") }
-    var responses = remember { mutableStateListOf<String>() }
+    var userInput by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
-    val messages = remember { mutableStateListOf<Message>() }
+    val messages = remember { mutableStateListOf<ChatMessage>() }
+    val dao = db.historyChatDao()
 
     Column(
         modifier = Modifier
@@ -78,8 +80,8 @@ fun MainScreen(innerPadding: PaddingValues, generativeModel: GenerativeModel) {
             state = lazyColumnState,
             modifier = Modifier.weight(1F)
         ) {
-            items(messages) { message ->
-                MessageBubble(message = message)
+            items(messages) { chatMessage ->
+                MessageBubble(message = chatMessage)
                 //Text(response, modifier = Modifier.padding(8.dp))
             }
         }
@@ -92,7 +94,7 @@ fun MainScreen(innerPadding: PaddingValues, generativeModel: GenerativeModel) {
             verticalAlignment = Alignment.CenterVertically
         ) {
 
-            TextField(value = userInput.value, onValueChange = { userInput.value = it}, colors = TextFieldDefaults.colors(
+            TextField(value = userInput, onValueChange = { userInput = it}, colors = TextFieldDefaults.colors(
                 focusedContainerColor = Color.Transparent,
                 unfocusedContainerColor = Color.Transparent,
                 disabledContainerColor = Color.Transparent,
@@ -103,29 +105,61 @@ fun MainScreen(innerPadding: PaddingValues, generativeModel: GenerativeModel) {
                     .padding(end = 8.dp)
             )
             OutlinedButton( onClick = {
-                scope.launch(Dispatchers.IO) { // Utilisation de IO pour éviter le blocage UI
-                    try {
-                        val response = generativeModel.generateContent(Content(parts = listOf(TextPart(userInput.value))))
+                if (userInput.isNotBlank()) {
+                    scope.launch(Dispatchers.IO) {
+                        try {
+                            // Enregistrer le message de l'utilisateur
+                            val userMessage = ChatMessage(
+                                message = userInput,
+                                isFromUser = true,
+                                date = System.currentTimeMillis()
+                            )
+                            //dao.insert(userMessage) Non fonctionnels
+                            messages.add(userMessage)
 
-                        withContext(Dispatchers.Main) {
-                            //Toast.makeText(context, "user input : ${userInput.value}", Toast.LENGTH_LONG).show()
-                        }
+                            // Envoyer la question à l'IA
+                            val response = generativeModel.generateContent(
+                                Content(parts = listOf(TextPart(userInput)))
+                            )
 
-                        response.text?.let {
-                            // Ajouter le message de l'utilisateur
-                            messages.add(Message(text = userInput.value, isUser = true))
-                            // Ajouter la réponse de l'IA
-                            messages.add(Message(text = it, isUser = false))
-                        } ?: messages.add(Message(text = "Erreur : Réponse vide", isUser = false))
-                    } catch (e: Exception) {
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(context, "Erreur : ${e.localizedMessage}", Toast.LENGTH_LONG).show()
-                            Log.i("IAID", "Erreur : ${e.localizedMessage}")
+                            // Enregistrer la réponse de l'IA
+                            response.text?.let { aiResponse ->
+                                val aiMessage = ChatMessage(
+                                    message = aiResponse,
+                                    isFromUser = false,
+                                    date = System.currentTimeMillis()
+                                )
+                                //dao.insert(aiMessage)
+                                messages.add(aiMessage)
+                            } ?: run {
+                                val errorMessage = ChatMessage(
+                                    message = "Erreur : Réponse vide",
+                                    isFromUser = false,
+                                    date = System.currentTimeMillis()
+                                )
+                                messages.add(errorMessage)
+                            }
+                        } catch (e: Exception) {
+                            withContext(Dispatchers.Main) {
+                                Toast.makeText(
+                                    context,
+                                    "Erreur : ${e.localizedMessage}",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                                Log.e("IAError", "Erreur : ${e.localizedMessage}")
+                            }
+
+                            // Ajouter un message d'erreur à l'UI
+                            val errorMessage = ChatMessage(
+                                message = "Erreur : ${e.localizedMessage}",
+                                isFromUser = false,
+                                date = System.currentTimeMillis()
+                            )
+                            messages.add(errorMessage)
+                        } finally {
+                            // Réinitialiser le champ de saisie
+                            userInput = ""
                         }
-                        messages.add(Message(text = "Erreur : ${e.localizedMessage}", isUser = false))
-                    } finally {
-                        // Réinitialiser la TextField après l'envoi
-                        userInput.value = ""
                     }
                 }
 
@@ -144,9 +178,9 @@ fun MainScreen(innerPadding: PaddingValues, generativeModel: GenerativeModel) {
 }
 
 @Composable
-fun MessageBubble(message: Message) {
-    val bubbleColor = if (message.isUser) Color.Red else Color.Blue
-    val alignment = if (message.isUser) Alignment.CenterEnd else Alignment.CenterStart
+fun MessageBubble(message: ChatMessage) {
+    val bubbleColor = if (message.isFromUser) Color.Red else Color.Blue
+    val alignment = if (message.isFromUser) Alignment.CenterEnd else Alignment.CenterStart
 
     Box(
         modifier = Modifier
@@ -155,7 +189,7 @@ fun MessageBubble(message: Message) {
         contentAlignment = alignment
     ) {
         Text(
-            text = message.text,
+            text = message.message,
             modifier = Modifier
                 .background(bubbleColor, RoundedCornerShape(8.dp))
                 .padding(horizontal = 16.dp, vertical = 8.dp),

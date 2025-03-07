@@ -24,12 +24,16 @@ import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.room.Room
 import com.google.ai.client.generativeai.GenerativeModel
 import fr.isen.fayet.isensmartcompanion.models.EventModel
+import fr.isen.fayet.isensmartcompanion.models.AppDatabase
 import fr.isen.fayet.isensmartcompanion.screen.EventsScreen
+import fr.isen.fayet.isensmartcompanion.screen.HistoryScreen
 import fr.isen.fayet.isensmartcompanion.screen.MainScreen
 import fr.isen.fayet.isensmartcompanion.screen.TabView
 import fr.isen.fayet.isensmartcompanion.service.RetrofitInstance
@@ -57,6 +61,11 @@ class MainActivity : ComponentActivity() {
         fetchEvents()
         enableEdgeToEdge()
         setContent {
+            val db = Room.databaseBuilder(
+                LocalContext.current,
+                AppDatabase::class.java,
+                "historyDataBase"
+            ).fallbackToDestructiveMigration().build()
             // setting up the individual tabs
             val homeTab = TabBarItem(title = "Home", selectedIcon = Icons.Filled.Home, unselectedIcon = Icons.Outlined.Home)
             val eventsTab = TabBarItem(title = "Events", selectedIcon = Icons.Filled.Info, unselectedIcon = Icons.Outlined.Info)//jai enlevé badgeAmount
@@ -74,7 +83,7 @@ class MainActivity : ComponentActivity() {
                     Box(Modifier.padding(innerPadding)) {
                         NavHost(navController = navController, startDestination = homeTab.title) {
                             composable(homeTab.title) {
-                                MainScreen(innerPadding, generativeModel)
+                                MainScreen(innerPadding, generativeModel, db)
                             }
                             composable(eventsTab.title) {
                                 EventsScreen(
@@ -83,7 +92,7 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
                             composable(historyTab.title) {
-                                //HistoryScreen(innerPadding)
+                                HistoryScreen(innerPadding, db)
                             }
                         }
                     }
